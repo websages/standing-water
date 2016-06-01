@@ -1,0 +1,18 @@
+#!/bin/bash
+# Derive our topic from our some/topic@hostname
+topic_at_host=$1; shift
+host=$(echo ${topic_at_host} | sed -e 's/^.*@//')
+topic=$(echo ${topic_at_host} | sed -e 's/@.*$//')
+
+# Generate a random topic for reply
+reply_topic="$(dd if=/dev/random bs=2048 count=1 2>/dev/null | shasum | awk '{print $1}')"
+
+# append a 'respond':'mqtt/_random_reply_topic' to our user-provided message
+message=$(echo "$*"|sed -e "s/}/,\"respond\":\"mqtt\/${reply_topic}@planck\"}/")
+
+# send the command
+echo "${message}" | perl -MNet::MQTT::Simple=${host} -le 'foreach $line (<STDIN>){chomp($line); publish($ARGV[0] => $line);}' "${topic}"
+
+# wait for our response
+echo "waitfor: mqtt/${reply_topic}"
+perl -MNet::MQTT::Simple -le '$mqtt = Net::MQTT::Simple->new("planck");$mqtt->run("$ARGV[0]"=>sub{($topic,$message)=@_;print "[$topic] $message\n";exit 0;});' "mqtt/${reply_topic}"
