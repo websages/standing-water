@@ -5,9 +5,9 @@ use Net::MQTT::Simple::SSL;
 my $json = JSON->new->allow_nonref;
 my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                         {
-                                          SSL_ca_file   => '/etc/ssl/ca.crt',
-                                          SSL_cert_file => '/etc/ssl/localhost.crt',
-                                          SSL_key_file  => '/etc/ssl/localhost.ckey',
+                                          SSL_ca_file   => '/etc/ssl/certs/ca.crt',
+                                          SSL_cert_file => '/etc/ssl/certs/localhost.crt',
+                                          SSL_key_file  => '/etc/ssl/private/localhost.ckey',
                                          }
                                       );
 
@@ -26,7 +26,7 @@ $json_hash = $json->decode($json_text);
 print "$topic $host $respond_topic $json_text\n";
 
 # append a 'respond_topic':'mqtt/_random_respond_topic' to our user-provided message
-$json_hash->{'respond_topic'} = "mqtt/$respond_topic\@mqtt" unless(defined( $json_hash{'respond_topic'}));
+$json_hash->{'respond_topic'} = "mqtt/$respond_topic\@mqtt.hq.thebikeshed.io" unless(defined( $json_hash{'respond_topic'}));
 
 $json_text = $json->encode($json_hash);
 
