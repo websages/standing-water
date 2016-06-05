@@ -1,9 +1,21 @@
 #!/usr/bin/env perl
+BEGIN { unshift @INC, "../lib"; }
+use Data::Dumper;
+use JSON;
 use LWP::UserAgent;
 use Net::MQTT::Simple::SSL;
-use JSON;
-use Data::Dumper;
-my $mqtt = Net::MQTT::Simple->new("127.0.0.1");
+
+my $mqtt_host='mqtt';
+my $hue_host='10.255.0.224';
+my $user='jameswhite';
+my $mqtt = Net::MQTT::Simple::SSL->new(
+                                        $mqtt_host,
+                                        {
+                                          SSL_ca_file   => '/etc/ssl/ca.crt',
+                                          SSL_cert_file => '/etc/ssl/localhost.crt',
+                                          SSL_key_file  => '/etc/ssl/localhost.ckey',
+                                         }
+                                      );
 my $color  =  {
                 'red'       => hex("0x0000"),
                 'orange'    => hex("0x1800"),
@@ -36,38 +48,62 @@ my $lights = {
                'windows' => [ 4, 5, 6, 7, 8, 9 ] # windows
              };
 
+sub put_lights_state{
+  my ($light, $json_hashref) = @_;
+  my $json = JSON->new->allow_nonref;
+  my $ua = LWP::UserAgent->new;
+     $ua->timeout(10);
+     $ua->env_proxy;
+  print "http://$hue_host/api/$user/lights/$light/state\n";
+  my $req = HTTP::Request->new( 'PUT', "http://$hue_host/api/$user/lights/$light/state");
+     $req->header( 'Content-Type' => 'application/json' );
+     $req->content( $json->encode( $json_hashref ) );
+  my $response = $ua->request( $req );
+  return $response->{'_content'};
+}
+
 sub callbacks {
   $mqtt->run(
               "bikeshed/hue" => sub {
-                                      my $saturation=255;
-                                      my $ua = LWP::UserAgent->new;
-                                      $ua->timeout(10);
-                                      $ua->env_proxy;
                                       my ($topic, $message) = @_;
-
+                                      print "[$topic] $message\n";
+                                      my $saturation = 255;
                                       my $decoded = decode_json($message);
-                                      $action = $decoded->{'action'};
-                                      $hue = $color->{$decoded->{'color'}};
-                                      $light = $decoded->{'lights'};
+                                      $light      = $decoded->{'lights'};
+                                      $action     = $decoded->{'action'};
+                                      $effect     = $decoded->{'effect'};
+                                      $hue        = $color->{$decoded->{'color'}};
                                       $saturation = 0 unless defined($hue);
 
-                                      if($action == 'color'){
-                                        foreach $light (@{$lights->{$light}}){
-                                          my $json = JSON->new->allow_nonref;
-                                          my $req = HTTP::Request->new( 'PUT', "http://philips-hue/api/jameswhite/lights/$light/state");
-                                          $req->header( 'Content-Type' => 'application/json' );
-                                          $req->content( $json->encode( { 'on' => $JSON::true, 'sat' => int($saturation), 'bri' => 255, 'hue' => int($hue) }) );
-                                          my $lwp = LWP::UserAgent->new;
-                                          my $response = $lwp->request( $req );
-                                          # print STDERR Data::Dumper->Dump([$response->{'_content'}]);
+                                      my @responses;
+                                      if($action eq 'color'){
+                                        print "ACTION IS COLOR\n";
+                                        $json_hashref = { 'on' => $JSON::true, 'sat' => int($saturation), 'bri' => 255, 'hue' => int($hue) };
+                                        if($decoded->{'color'} eq 'black'){  $json_hashref->{'on'} = $JSON::false; }
+                                        if(defined($decoded->{'alert'})){
+                                          $json_hashref->{'alert'} = $decoded->{'alert'};
                                         }
+                                        foreach $light (@{$lights->{$light}}){ push(@responses, put_lights_state($light,$json_hashref)); }
+                                      }elsif($action eq 'effect'){
+                                        print "ACTION IS EFFECT\n";
+                                        foreach $light (@{$lights->{$light}}){ push(@responses, put_lights_state($light,{'effect' => $effect})); }
                                       }
-                                      if($decoded->{'respond'}){
-                                        ($respond_topic, $respond_host) = split(/@/,$decoded->{'respond'});
+
+                                      # Respond if respond_topic was given
+                                      if($decoded->{'respond_topic'}){
+                                        print "RESPONDING\n";
+                                        ($respond_topic, $respond_host) = split(/@/,$decoded->{'respond_topic'});
                                         print "respond to $respond_topic at $respond_host\n";
-                                        $respond_host='127.0.0.1' unless defined($respond_host);
-                                        my $response = Net::MQTT::Simple->new($respond_host);
-                                        $mqtt->retain("$respond_topic" => "lights changed to $decoded->{'color'}");
+                                        $respond_host='mqtt' unless defined($respond_host);
+                                        my $mqtt_response = Net::MQTT::Simple::SSL->new( $respond_host,
+                                                                                {
+                                                                                  SSL_ca_file   => '/etc/ssl/ca.crt',
+                                                                                  SSL_cert_file => '/etc/ssl/tyr.hq.thebikeshed.io.crt',
+                                                                                  SSL_key_file  => '/etc/ssl/tyr.hq.thebikeshed.io.ckey',
+                                                                                 }
+                                                                              );
+                                        $mqtt_response->publish("$respond_topic" => "\n".join("\n",@responses));
+
                                       }
                                     },
               "#" => sub {

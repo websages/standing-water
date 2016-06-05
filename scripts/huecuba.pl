@@ -130,7 +130,6 @@ sub callbacks {
                                                                               );
                                         $mqtt->retain("$respond_topic" => "\n".join("\n",@responses));
                                       }
-                                      topic_message
                                     },
               "#" => sub {
                            my ($topic, $message) = @_;

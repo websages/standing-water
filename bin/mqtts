@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+use JSON;
+use Net::MQTT::Simple::SSL;
+
+my $json = JSON->new->allow_nonref;
+my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
+                                        {
+                                          SSL_ca_file   => '/etc/ssl/ca.crt',
+                                          SSL_cert_file => '/etc/ssl/localhost.crt',
+                                          SSL_key_file  => '/etc/ssl/localhost.ckey',
+                                         }
+                                      );
+
+# Derive our topic from our some/topic@hostname
+my $topic_at_host = shift(@ARGV);
+my ($topic,$host) = split(/\@/,$topic_at_host);
+
+# Generate a random topic for reply
+my @chars = ("A".."Z", "a".."z", "0".."9");
+my $respond_topic;
+$respond_topic .= $chars[rand @chars] for 1..16;
+
+my $json_text = shift(@ARGV);
+$json_hash = $json->decode($json_text);
+
+print "$topic $host $respond_topic $json_text\n";
+
+# append a 'respond_topic':'mqtt/_random_respond_topic' to our user-provided message
+$json_hash->{'respond_topic'} = "mqtt/$respond_topic\@mqtt" unless(defined( $json_hash{'respond_topic'}));
+
+$json_text = $json->encode($json_hash);
+
+# send the command
+$mqtt->publish($topic => $json_text);
+
+# wait for our response
+print "waitfor: mqtt/${respond_topic}\n";
+$mqtt->run(
+            "mqtt/${respond_topic}" => sub{
+                                            ($topic,$message)=@_;
+                                            print "[$topic] $message\n";
+                                            exit 0;
+                                          }
+          );
