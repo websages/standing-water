@@ -77,7 +77,6 @@ sub callbacks {
 
                                       my @responses;
                                       if($action eq 'color'){
-                                        print "ACTION IS COLOR\n";
                                         $json_hashref = { 'on' => $JSON::true, 'sat' => int($saturation), 'bri' => 255, 'hue' => int($hue) };
                                         if($decoded->{'color'} eq 'black'){  $json_hashref->{'on'} = $JSON::false; }
                                         if(defined($decoded->{'alert'})){
@@ -85,21 +84,19 @@ sub callbacks {
                                         }
                                         foreach $light (@{$lights->{$light}}){ push(@responses, put_lights_state($light,$json_hashref)); }
                                       }elsif($action eq 'effect'){
-                                        print "ACTION IS EFFECT\n";
                                         foreach $light (@{$lights->{$light}}){ push(@responses, put_lights_state($light,{'effect' => $effect})); }
                                       }
 
                                       # Respond if respond_topic was given
                                       if($decoded->{'respond_topic'}){
-                                        print "RESPONDING\n";
                                         ($respond_topic, $respond_host) = split(/@/,$decoded->{'respond_topic'});
                                         print "respond to $respond_topic at $respond_host\n";
                                         $respond_host='mqtt' unless defined($respond_host);
                                         my $mqtt_response = Net::MQTT::Simple::SSL->new( $respond_host,
                                                                                 {
                                                                                   SSL_ca_file   => '/etc/ssl/ca.crt',
-                                                                                  SSL_cert_file => '/etc/ssl/tyr.hq.thebikeshed.io.crt',
-                                                                                  SSL_key_file  => '/etc/ssl/tyr.hq.thebikeshed.io.ckey',
+                                                                                  SSL_cert_file => '/etc/ssl/localhost.crt',
+                                                                                  SSL_key_file  => '/etc/ssl/localhost.ckey',
                                                                                  }
                                                                               );
                                         $mqtt_response->publish("$respond_topic" => "\n".join("\n",@responses));
