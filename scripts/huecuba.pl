@@ -12,9 +12,9 @@ my $user = 'jameswhite';
 my $mqtt = Net::MQTT::Simple::SSL->new(
                                         $mqtt_host,
                                         {
-                                          SSL_ca_file   => '/etc/ssl/ca.crt',
-                                          SSL_cert_file => '/etc/ssl/localhost.crt',
-                                          SSL_key_file  => '/etc/ssl/localhost.ckey',
+                                          SSL_ca_file   => '/etc/ssl/certs/ca.crt',
+                                          SSL_cert_file => '/etc/ssl/certs/localhost.crt',
+                                          SSL_key_file  => '/etc/ssl/private/localhost.ckey',
                                          }
                                       );
 my $color  =  {
@@ -95,9 +95,9 @@ sub callbacks {
                                         $respond_host='mqtt' unless defined($respond_host);
                                         my $mqtt_response = Net::MQTT::Simple::SSL->new( $respond_host,
                                                                                 {
-                                                                                  SSL_ca_file   => '/etc/ssl/ca.crt',
-                                                                                  SSL_cert_file => '/etc/ssl/localhost.crt',
-                                                                                  SSL_key_file  => '/etc/ssl/localhost.ckey',
+                                                                                  SSL_ca_file   => '/etc/ssl/certs/ca.crt',
+                                                                                  SSL_cert_file => '/etc/ssl/certs/localhost.crt',
+                                                                                  SSL_key_file  => '/etc/ssl/private/localhost.ckey',
                                                                                  }
                                                                               );
                                         $mqtt_response->publish("$respond_topic" => "\n".join("\n",@responses));
