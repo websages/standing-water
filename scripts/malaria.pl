@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use LWP::UserAgent;
-use Net::MQTT::Simple;
+use Net::MQTT::Simple::SSL;
 use JSON;
 use Data::Dumper;
 my $mqtt = Net::MQTT::Simple->new("127.0.0.1");
