@@ -13,7 +13,7 @@ var TRUSTED_CA_LIST = fs.readFileSync('/etc/ssl/certs/mosquitto.org.crt');
 var HOST = 'test.mosquitto.org';
 var PORT = 8883;
 */
- 
+
 /* bikeshed settings */
 var KEY = fs.readFileSync('/etc/ssl/private/localhost.ckey');
 var CERT = fs.readFileSync('/etc/ssl/certs/localhost.crt');
@@ -37,16 +37,11 @@ var options = {
   }
 
 };
- 
 
 var client = mqtt.connect('mqtts://' + HOST, options);
 
-client.on('error', function (error) {
-  console.log(error); 
-});
-
 client.on('connect', function () {
-  console.log('Connected'); 
+  console.log('Connected') 
   client.subscribe('#');
   client.publish('presence', 'Hello mqtt');
   client.publish('presence', 'Current time is: ' + new Date());
