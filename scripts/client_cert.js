@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 var mqtt = require('mqtt');
 var fs = require('fs');
-console.log('wtf?');
 
 /* cleartext settings [FUNCTIONAL]
 var HOST = 'test.mosquitto.org';
