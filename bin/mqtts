@@ -34,11 +34,11 @@ $json_text = $json->encode($json_hash);
 $mqtt->publish($topic => $json_text);
 
 # wait for our response
-print "waitfor: mqtt/${respond_topic}\n";
-$mqtt->run(
-            "mqtt/${respond_topic}" => sub{
-                                            ($topic,$message)=@_;
-                                            print "[$topic] $message\n";
-                                            exit 0;
-                                          }
-          );
+# print "waitfor: mqtt/${respond_topic}\n";
+# $mqtt->run(
+#             "mqtt/${respond_topic}" => sub{
+#                                             ($topic,$message)=@_;
+#                                             print "[$topic] $message\n";
+#                                             exit 0;
+#                                           }
+#           );
