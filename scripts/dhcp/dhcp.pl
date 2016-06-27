@@ -106,17 +106,99 @@ package DHCPDSubnet;
     my $blob = shift;
     my $self = {};
     bless $self, $class;
-
+    $self->parse_subnet($blob);
     return $self;
+  }
+
+  sub balanced{
+    my $self = shift;
+    my $string = shift;
+    my $left_braces = 0;
+    my $right_braces = 0;
+    my @strarray = split(//,$string);
+    foreach my $char (@strarray){
+      if($char eq '{'){ $left_braces++; }
+      if($char eq '}'){ $right_braces++; }
+    }
+    if($left_braces == $right_braces){return 1;}
+    return 0;
+  }
+
+  sub parse_subnet{
+    my $self = shift;
+    my $blob = shift;
+    my @blobby = split(//,$blob);
+    my @prefix = ();
+    my @suffix= ();
+    my @working= ();
+    my $character='';
+    while($character ne '{'){
+      $character=shift(@blobby);
+      push(@prefix,$character);
+    }
+    $character='';
+    while($character ne '}'){
+      $character=pop(@blobby);
+      unshift(@suffix,$character);
+    }
+    my @tmpconfig = split(/\n/,join('', @blobby));
+    while(@tmpconfig){
+      my $item = shift(@tmpconfig);
+      unless($item=~m/^\s*$/){
+        push( @working, $item ) unless($item=~m/^\s*$/);
+        # print ">>>> " . join('',@working) . "\n";
+        if($self->balanced( join('',@working) ) == 1){
+          my $blob = join('',@working);
+          if($blob=~m/^\s*host\s+(.*)\s+{/){
+            push(@{ $self->{'hosts'} }, DHCPDSubnetHost->new(join("\n",@working)));
+            @working= ();
+          }else{
+            push(@{ $self->{'config'} },join('',@working));
+            @working= ();
+          }
+        }
+      }
+    }
+    print Data::Dumper->Dump([$self]);
   }
 1;
 
 package DHCPDSubnetHost;
   sub new{
     my $class = shift;
-    my $subnet = shift;
     my $self = {};
-    return bless $self, $class;
+    bless $self, $class;
+    my $blob = shift;
+    my @blobby = split(//,$blob);
+    my @prefix = ();
+    my @suffix= ();
+
+    my $character='';
+    while($character ne '{'){
+      $character=shift(@blobby);
+      push(@prefix,$character);
+    }
+    $self->{'prefix'} = join('',@prefix);
+    $self->{'prefix'} =~ s/^\s+//;
+    $self->{'prefix'} =~ s/\s+$//;
+
+    $character='';
+    while($character ne '}'){
+      $character=pop(@blobby);
+      unshift(@suffix,$character);
+    }
+    $self->{'suffix'} = join('',@suffix);
+    $self->{'suffix'} =~ s/^\s+//;
+    $self->{'suffix'} =~ s/\s+$//;
+
+    $self->{'block'} = join('', @blobby);
+    $self->{'block'} =~ s/^\s+//;
+    $self->{'block'} =~ s/\s+$//;
+    $self->{'block'} =~ s/\n/ /;
+    @{$self->{'items'}} = split(/;/,$self->{'block'});
+    delete $self->{'block'};
+    map( { $_=~s/^\s+//; $_=~s/\s+$//; }  @{$self->{'items'}});
+    return $self;
   }
 1;
 
@@ -153,7 +235,6 @@ package DHCPDConfig;
     return 0;
   }
 
-  # My God forgive me for this subroutine.
   sub parse_config{
     my $self = shift;
     my @comments;
@@ -211,6 +292,7 @@ my $leases = DHCPLeases->new($filename);
 system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename");
 my $config = DHCPDConfig->new($filename);
 # print $config->config;
+print Data::Dumper->Dump([$config]);
 
 #my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
 #                                        {
