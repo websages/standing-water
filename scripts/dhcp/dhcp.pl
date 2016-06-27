@@ -1,61 +1,4 @@
 #!/usr/bin/env perl
-################################################################################
-# all of this fuckery is to auto-retrieve dependencies
-my $libdir;
-BEGIN {
-  use strict;
-  use Cwd;
-  use File::Basename;
-  my $oldpwd=getcwd;
-  chdir dirname($0);
-  my $pwd=getcwd;
-  mkdir("$pwd/lib",0755) unless(-d "$pwd/lib");
-  $libdir="$pwd/lib";
-  chdir $oldpwd;
-  unless (eval qq(require local::lib)){ die "FATAL: couldn't use local::lib\n"; }
-  unless (eval qq(require CPAN)){ die "FATAL: couldn't use CPAN\n"; }
-  my @modules = qw(
-                    JSON
-                    Data::Dumper
-                    TAP::Harness::Env
-                    MooseX::Types::Path::Class
-                    Net::ISC::DHCPd::Leases
-                    Net::ISC::DHCPd::Config
-                    Net::MQTT::Simple::SSL
-                  );
-  foreach my $module (@modules){
-    unless (eval "require $module"){
-      warn "couldn't use $module\n";
-      use local::lib "$libdir";
-      CPAN::install($module);
-      unless (eval "require $module"){
-        die "FATAL: Cannot install $module\n";
-      }
-    }
-  }
-}
-# end dependency auto-retrieval fuckery
-################################################################################
-
-################################################################################
-# begin actual work fuckery
-
-use File::Temp qw/ tempfile tempdir /;
-($fh, $filename) = tempfile();
-
-system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename");
-my $leases = Net::ISC::DHCPd::Leases->new( file => $filename);
-$leases->parse;
-
-system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename");
-my $config = Net::ISC::DHCPd::Config->new(file => $filename);
-$config->parse;
-
-# print Data::Dumper->Dump([{'leases' => $leases,'config' => $config}]);
-print $config->generate."\n";
-
-exit 0;
-
 package DHCPlease;
 use Text::ASCIITable;
 sub new {
@@ -104,42 +47,46 @@ sub ends{
 sub abandoned{
   my $self = shift;
   if(defined($self->{'abandoned'})){
-    return true;
+    return 1;
   }
-  return false;
+  return 0;
 }
 1;
 
-package DHCPDEntry;
-  sub new{
-    my $class = shift;
-    my $self = {};
-    return bless $self, $class;
-  }
-1;
+package DHCPLeases;
+use strict;
+sub new($){
+  my $class = shift;
+  my $filename = shift;
+  my $self={};
+  bless $self, $class;
 
-sub leases {
-   my $text_chunk='';
-   my $leases = {};
-   open(my $leasefile, "/usr/bin/ssh opt\@10.255.0.1 'cat /var/db/dhcpd.leases'|") || die "cannot get leases. $!";
-   while(chomp(my $line=<$leasefile>)){
-     if($line=~m/^\s*lease .*/){
-       if(! $text_chunk eq ""){
-         my $lease = DHCPlease->new($text_chunk);
-         push(@{ $leases->{$lease->lease} },$lease);
-         $text_chunk=$line;
-       }else{
-         $text_chunk.=$line;
-       }
-     }else{
-       $text_chunk.=$line;
-     }
-   }
+  $self->{'leases'} = {};
+  my $text_chunk='';
+  open(my $leasefile, "$filename") || die "cannot get leases. $!";
+  while(chomp(my $line=<$leasefile>)){
+    if($line=~m/^\s*lease .*/){
+      if(! $text_chunk eq ""){
+        my $lease = DHCPlease->new($text_chunk);
+        push(@{ $self->{'leases'}->{$lease->lease} },$lease);
+        $text_chunk=$line;
+      }else{
+        $text_chunk.=$line;
+      }
+    }else{
+      $text_chunk.=$line;
+    }
+  }
+  return $self;
+}
+
+sub table{
+   my $self = shift;
    my $table = Text::ASCIITable->new({ headingText => 'DHCP Leases' });
    $table->setCols('lease', 'hardware','starts','ends','abandoned');
-   foreach my $key (sort(keys($leases))){
+   foreach my $key (sort(keys($self->{'leases'}))){
      my $latest_entry = undef;
-     foreach my $entry (@{$leases->{$key}}){
+     foreach my $entry (@{$self->{'leases'}->{$key}}){
        if( !defined($latest_entry) || ($entry->{'starts'} > $latest_entry->{'starts'}) ){
           $latest_entry = $entry;
        }
@@ -148,18 +95,122 @@ sub leases {
        $table->addRow($latest_entry->lease, $latest_entry->hardware,$latest_entry->starts,$latest_entry->ends,defined($latest_entry->{'abandoned'})?'yes':'no');
      }
    }
-   print $table;
+   return $table;
 }
 
-sub config_show {
-   open(my $dhcpdconf, "/usr/bin/ssh opt\@10.255.0.1 'cat /etc/dhcpd.conf'|") || die "cannot get leases. $!";
-   while(chomp(my $line=<$dhcpdconf>)){
-     print $line."\n";
+1;
+
+package DHCPDSubnet;
+  sub new{
+    my $class = shift;
+    my $blob = shift;
+    my $self = {};
+    bless $self, $class;
+
+    return $self;
+  }
+1;
+
+package DHCPDSubnetHost;
+  sub new{
+    my $class = shift;
+    my $subnet = shift;
+    my $self = {};
+    return bless $self, $class;
+  }
+1;
+
+package DHCPDConfig;
+  use Data::Dumper;
+  sub new {
+    my $class = shift;
+    my $filename = shift;
+    my $self = {};
+    bless $self, $class;
+    $self->{'global-options'} = [];
+    $self->{'subnets'} = [];
+    if(-e $filename){
+      open(my $dhcpdconf, "$filename") || die "cannot get config. $!";
+      while(chomp(my $line=<$dhcpdconf>)){
+       $self->{'config'}.=$line."\n";
+     }
    }
-}
-leases
+   $self->parse_config;
+   return $self;
+  }
 
-# config_show
+  sub balanced{
+    my $self = shift;
+    my $string = shift;
+    my $left_braces = 0;
+    my $right_braces = 0;
+    my @strarray = split(//,$string);
+    foreach my $char (@strarray){
+      if($char eq '{'){ $left_braces++; }
+      if($char eq '}'){ $right_braces++; }
+    }
+    if($left_braces == $right_braces){return 1;}
+    return 0;
+  }
+
+  # My God forgive me for this subroutine.
+  sub parse_config{
+    my $self = shift;
+    my @comments;
+    my @config;
+    my @tmpconfig = split(/\n/,$self->config);
+    foreach my $line (split(/\n/,$self->config)){
+      my ($config_line, $comment_line);
+      if($line=~m/(.*[^\\])(#.*)/  ){
+        $config_line=$1;
+        $comment_line=$2;
+      }else{
+        $config_line=$line;
+        $comment_line='';
+      }
+      push(@config,$config_line);
+      push(@comments,$comment_line);
+    }
+    my @working = ();
+    while(@tmpconfig){
+      my $item = shift(@tmpconfig);
+      unless($item=~m/^\s*$/){
+        push( @working, $item ) unless($item=~m/^\s*$/);
+        # print ">>>> " . join('',@working) . "\n";
+        if($self->balanced( join('',@working) ) == 1){
+          my $blob = join('',@working);
+          if($blob=~m/^\s*subnet\s+/){
+            push(@{ $self->{'subnets'} }, DHCPDSubnet->new(join("\n",@working)));
+            @working = ();
+          }elsif($blob=~m/^\s*option\s+/){
+            push(@{$self->{'global-options'}},join('',@working));
+            @working = ();
+          }else{
+            print STDERR "WARNING: unhandled block:\n". join("\n",@working)."\n";
+            @working = ();
+          }
+        }
+      }
+    }
+  }
+
+  sub config{
+    my $self=shift;
+    return $self->{'config'};
+  }
+1;
+
+################################################################################
+use File::Temp qw/ tempfile tempdir /;
+my ($fh, $filename) = tempfile();
+print "$filename\n";
+system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename");
+my $leases = DHCPLeases->new($filename);
+#print $leases->table;
+
+system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename");
+my $config = DHCPDConfig->new($filename);
+# print $config->config;
 
 #my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
 #                                        {
