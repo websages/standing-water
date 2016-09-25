@@ -98,6 +98,30 @@ sub table{
    return $table;
 }
 
+sub leases{
+  my $self=shift;
+  return $self->{'leases'}
+}
+
+sub getleasesbymac{
+  my $self = shift;
+  my $macaddr = shift;
+  my @matches;
+  foreach my $ip (keys($self->leases)){
+    foreach my $entry ( @{$self->leases->{$ip}} ){
+      push(@matches, $entry) if($entry->hardware eq $macaddr);
+    }
+  }
+  return @matches
+}
+
+sub getleasesbyip{
+  my $self = shift;
+  my $ip = shift;
+  return $self->leases->{$ip};
+}
+
+
 1;
 
 package DHCPDSubnet;
@@ -159,7 +183,8 @@ package DHCPDSubnet;
         }
       }
     }
-    print Data::Dumper->Dump([$self]);
+    map( { $_=~s/^\s+//; $_=~s/\s+$//; $_=~s/;$//; }  @{$self->{'config'}});
+    return $self;
   }
 1;
 
@@ -284,15 +309,17 @@ package DHCPDConfig;
 ################################################################################
 use File::Temp qw/ tempfile tempdir /;
 my ($fh, $filename) = tempfile();
-print "$filename\n";
 system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename");
 my $leases = DHCPLeases->new($filename);
-#print $leases->table;
+# print $leases->table;
+print Data::Dumper->Dump([$leases->getleasesbymac("60:03:08:90:93:e8")]);
+print Data::Dumper->Dump([$leases->getleasesbymac("68:5b:35:a3:6f:51")]);
+print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.108")]);
+print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.120")]);
 
 system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename");
 my $config = DHCPDConfig->new($filename);
-# print $config->config;
-print Data::Dumper->Dump([$config]);
+print Data::Dumper->Dump([$config->{'subnets'}]);
 
 #my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
 #                                        {
