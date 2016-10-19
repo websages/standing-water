@@ -48,14 +48,12 @@ sub callbacks {
                                       @parts=split(/\//,$topic);
                                       $who = $parts[4];
                                       $where = $parts[2];
-                                      if($message =~m/\s*where(\s+is|'s|\s+the\s+(fuck|hell)\s+is)\s+(\S+)/){
+                                      if($message =~m/\s*!where(\s+is|'s|\s+the\s+(fuck|hell)\s+is)\s+(\S+)/){
                                         $device=$3;
-                                        print "[$topic] $message\n";
-                                        print Data::Dumper->Dump([$brain]);
                                         if(defined($brain->{$device})){
-                                          $mqtt->publish("irc/room/$where/say" => "$who: $device is at $brain->{$device}")
+                                          $mqtt->publish("hubot/respond/room/$where" => "$who: $device is at $brain->{$device}")
                                         }else{
-                                          $mqtt->publish("irc/room/$where/say" => "$who: I don't know anything about the location of '$device'.")
+                                          $mqtt->publish("irc/room/$where" => "$who: I don't know anything about the location of '$device'.")
                                         }
                                       }
                                    }
