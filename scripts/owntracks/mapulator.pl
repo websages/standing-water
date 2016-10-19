@@ -6,8 +6,7 @@ use LWP::UserAgent;
 use Net::MQTT::Simple::SSL;
 
 my $mqtt_host='mqtt.hq.thebikeshed.io';
-my $hue_host='10.255.0.224';
-my $user='jameswhite';
+my $brain = {};
 $json = JSON->new->allow_nonref;
 my $mqtt = Net::MQTT::Simple::SSL->new(
                                         $mqtt_host,
@@ -24,9 +23,8 @@ sub callbacks {
                                       my $data = $json->decode($message);
 
                                       my @parts = split(/\//,$topic);
-                                      shift(@parts);
-                                      unshift(@parts,"whereis");
-                                      my $newtopic = join('/',@parts);
+                                      my $device = pop(@parts);
+                                      my $newtopic = join('/','whereis',$device);
 
                                       my ($new_data,$lon,$lat);
                                       if( ref($data) eq 'HASH'){
@@ -41,7 +39,26 @@ sub callbacks {
                                       if($lat < 0){ $lat = abs($lat)."S"; }else{$lat = $lat."N"}
                                       $new_data = $json->encode( { 'url' => "https://maps.google.com/?q=$lat,$lon" } );
                                       $mqtt->retain($newtopic => $new_data);
+                                      $device=~s/^\s+//g;
+                                      $device=~s/\s+$//g;
+                                      $brain->{$device} = "https://maps.google.com/?q=$lat,$lon";
                                    },
+               "irc/room/#" => sub {
+                                      my ($topic, $message) = @_;
+                                      @parts=split(/\//,$topic);
+                                      $who = $parts[4];
+                                      $where = $parts[2];
+                                      if($message =~m/\s*where(\s+is|'s|\s+the\s+(fuck|hell)\s+is)\s+(\S+)/){
+                                        $device=$3;
+                                        print "[$topic] $message\n";
+                                        print Data::Dumper->Dump([$brain]);
+                                        if(defined($brain->{$device})){
+                                          $mqtt->publish("irc/room/$where/say" => "$who: $device is at $brain->{$device}")
+                                        }else{
+                                          $mqtt->publish("irc/room/$where/say" => "$who: I don't know anything about the location of '$device'.")
+                                        }
+                                      }
+                                   }
             );
 }
 callbacks
