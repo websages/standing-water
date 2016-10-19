@@ -53,7 +53,7 @@ sub callbacks {
                                         if(defined($brain->{$device})){
                                           $mqtt->publish("hubot/respond/room/$where" => "$who: $device is at $brain->{$device}")
                                         }else{
-                                          $mqtt->publish("irc/room/$where" => "$who: I don't know anything about the location of '$device'.")
+                                          $mqtt->publish("hubot/respond/room/$where" => "$who: I don't know anything about the location of '$device'.")
                                         }
                                       }
                                    }
