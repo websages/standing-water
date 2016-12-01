@@ -23,7 +23,7 @@ sub callbacks {
                                       @parts=split(/\//,$topic);
                                       $who = $parts[4];
                                       $where = $parts[2];
-                                      if($message =~m/\s*is it hot in here?/){
+                                      if($message =~m/\s*is it (hot|warm|cold|chilly|freezing) in here?/i){
                                         open (PROC,"/bin/bash -c '(cd /var/cache/git/veralite; /usr/local/bin/bundle exec bin/temperature.rb)'|");
                                         while(my $line=<PROC>){
                                           chomp($line);
