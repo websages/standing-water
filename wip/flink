@@ -1,0 +1,19 @@
+#!/bin/bash
+LINK="$1"; shift 1
+LEVEL="$1"
+[ -z "${LEVEL}" ] && LEVEL=0
+
+DIR=$(cd $(dirname "${LINK}"); pwd)
+BASE=$(basename "${LINK}")
+OLDPWD=$(pwd)
+( 
+  cd "${DIR}"
+  if [ -h "${BASE}" ]; then 
+    [ "${LEVEL}" -ne "0" ] && echo -n " -> "
+    echo -n "${BASE}"
+    TARGET=$(ls -l "${LINK}" | awk '{print $NF}')
+    flink "${TARGET}" $(expr $LEVEL + 1)
+  else
+    echo " -> ${BASE}"
+  fi
+)
