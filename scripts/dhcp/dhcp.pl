@@ -186,6 +186,12 @@ package DHCPDSubnet;
     map( { $_=~s/^\s+//; $_=~s/\s+$//; $_=~s/;$//; }  @{$self->{'config'}});
     return $self;
   }
+
+  sub hosts{
+    my $self=shift;
+    return $self->{'hosts'};
+  }
+
 1;
 
 package DHCPDSubnetHost;
@@ -206,6 +212,11 @@ package DHCPDSubnetHost;
     $self->{'prefix'} = join('',@prefix);
     $self->{'prefix'} =~ s/^\s+//;
     $self->{'prefix'} =~ s/\s+$//;
+    if($self->{'prefix'} =~ m/host\s+(\S+)\s+{/){ 
+        $self->{'hostname'} = $1; 
+        delete $self->{'prefix'};
+    }
+    
 
     $character='';
     while($character ne '}'){
@@ -215,6 +226,10 @@ package DHCPDSubnetHost;
     $self->{'suffix'} = join('',@suffix);
     $self->{'suffix'} =~ s/^\s+//;
     $self->{'suffix'} =~ s/\s+$//;
+    if($self->{'suffix'} =~ m/}\s+#\s*(.*)/){ 
+        $self->{'comment'} = $1; 
+        delete $self->{'suffix'};
+    }
 
     $self->{'block'} = join('', @blobby);
     $self->{'block'} =~ s/^\s+//;
@@ -223,7 +238,43 @@ package DHCPDSubnetHost;
     @{$self->{'items'}} = split(/;/,$self->{'block'});
     delete $self->{'block'};
     map( { $_=~s/^\s+//; $_=~s/\s+$//; }  @{$self->{'items'}});
+    foreach my $item (@{ $self->{'items'} }){
+        if($item =~ m/fixed-address\s+(\S+)/){ $self->{'ip'} = $1; }
+        elsif($item =~ m/hardware\s+ethernet\s+(\S+)/){ $self->{'macaddr'} = $1; }
+        elsif($item =~ m/option\s+(\S+)\s+(.*)/){ $self->{'option'}->{$1} = $2; }
+        else{ print "I don't understand what [$item] is.\n"
+    }
+    delete $self->{'items'}};
     return $self;
+  }
+
+  sub text{
+      my $self=shift;
+      my $text = '';
+      if(defined( $self->{'prefix'} )){
+          $text = $self->{'prefix'};
+      }else{
+          $text = "host $self->{'hostname'} {";
+      }
+
+      if(defined( $self->{'items'} )){
+          $text .= join(';',$self->{'items'});
+      }else{
+          $text .= " hardware ethernet $self->{'macaddr'};" if(defined($self->{'macaddr'}));
+          $text .= " fixed-address $self->{'ip'};" if(defined($self->{'ip'}));
+          if(defined($self->{'options'})){
+              foreach my $option (sort(keys(%{ $self->{'option'} }))){
+                $text .= " option $option $self->{'option'}->{$option};";
+              }
+          }
+      }
+
+      if(defined( $self->{'suffix'} )){
+          $text .= $self->{'suffix'};
+      }else{
+          $text .= '}';
+          $text .= " # $self->{'comment'}" if(defined($self->{'comment'}));
+      }
   }
 1;
 
@@ -304,38 +355,37 @@ package DHCPDConfig;
     my $self=shift;
     return $self->{'config'};
   }
+
+  sub subnets{
+    my $self=shift;
+    return $self->{'subnets'};
+  }
+
+  sub gethostbyip{
+    my $self=shift;
+    my $ip=shift;
+    foreach my $subnet (@{ $self->subnets }){
+        if(defined($subnet->hosts)){
+            foreach my $host (@{ $subnet->hosts }){
+                print $host->text."\n";
+                print Data::Dumper->Dump([$host]);
+            }
+        }
+    }
+  }
 1;
 
 ################################################################################
 use File::Temp qw/ tempfile tempdir /;
 my ($fh, $filename) = tempfile();
-system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename");
-my $leases = DHCPLeases->new($filename);
-# print $leases->table;
-print Data::Dumper->Dump([$leases->getleasesbymac("60:03:08:90:93:e8")]);
-print Data::Dumper->Dump([$leases->getleasesbymac("68:5b:35:a3:6f:51")]);
-print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.108")]);
-print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.120")]);
+# system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename");
+# my $leases = DHCPLeases->new($filename);
+# # print $leases->table;
+# print Data::Dumper->Dump([$leases->getleasesbymac("60:03:08:90:93:e8")]);
+# print Data::Dumper->Dump([$leases->getleasesbymac("68:5b:35:a3:6f:51")]);
+# print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.108")]);
+# print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.120")]);
 
 system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename");
 my $config = DHCPDConfig->new($filename);
-print Data::Dumper->Dump([$config->{'subnets'}]);
-
-#my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
-#                                        {
-#                                          SSL_ca_file   => '/etc/ssl/certs/ca.crt',
-#                                          SSL_cert_file => '/etc/ssl/certs/localhost.crt',
-#                                          SSL_key_file  => '/etc/ssl/private/localhost.ckey',
-#                                         }
-#                                      );
-#sub callbacks {
-#  $mqtt->retain("perl test" => "hello world");
-#  $mqtt->run(
-#              "#" => sub {
-#                           my ($topic, $message) = @_;
-#                           print "[$topic] $message\n";
-#                           # exit 0;
-#                         },
-#            );
-#}
-#callbacks
+print $config->gethostbyip('10.255.0.180');
