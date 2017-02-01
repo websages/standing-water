@@ -47,6 +47,11 @@ sub callbacks {
                            print "[$topic] $message\n";
                            # exit 0;
                          },
+              "dhcpd" => sub {
+                           my ($topic, $message) = @_;
+                           print "[$topic] $message\n";
+                           # exit 0;
+                         },
             );
 }
 callbacks
