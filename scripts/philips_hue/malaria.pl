@@ -5,7 +5,7 @@ use JSON;
 use LWP::UserAgent;
 use Net::MQTT::Simple::SSL;
 
-my $mqtt_host='mqtt';
+my $mqtt_host='mqtt.hq.thebikeshed.io';
 my $hue_host='10.255.0.224';
 my $user='jameswhite';
 my $mqtt = Net::MQTT::Simple::SSL->new(
@@ -28,7 +28,7 @@ my $color  =  {
                 'pink'      => hex("0xE000"),
               };
 my $lights = {
-               'all'   => [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+               'all'   => [ 1, 2, 3, 4, 5, 6, 7, 8, 9 , 10 ],
                'one'   => [ 1 ], # lamp next to the keg
                'two'   => [ 2 ], # lamp between fryman and rick
                'three' => [ 3 ], # lamp behind stephen
@@ -38,6 +38,8 @@ my $lights = {
                'seven' => [ 7 ], # window_1 (to northrup's right)
                'eight' => [ 8 ], # window_5 (to jameswhite's right)
                'nine'  => [ 9 ], # window_3 (to rickbra's left)
+               'ten'   => [ 10 ], # window_3 (to rickbra's left)
+               'cinema'  => [ 10 ], # (around jameswhite)
                'jameswhite'  => [ 8 ], # (around jameswhite)
                'aziz'  => [ 6 ],# (around aziz)
                'rick'  => [ 9 ],# (around rick)
@@ -45,7 +47,7 @@ my $lights = {
                'northrup' => [ 7 ],# (around northrup)
                'stephen' => [ 4, 3 ],# (around stephen)
                'lamps' => [ 1, 2, 3 ],# standing lamps
-               'windows' => [ 4, 5, 6, 7, 8, 9 ] # windows
+               'windows' => [ 4, 5, 6, 7, 8, 9, 10 ] # windows
              };
 
 sub put_lights_state{
