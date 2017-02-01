@@ -15,6 +15,7 @@ BEGIN {
 use Data::Dumper;
 use DHCPD;
 use File::Temp qw/ tempfile tempdir /;
+use Net::MQTT::Simple::SSL;
 
 # Scrape our leases
 my ($fh, $filename) = tempfile();
@@ -34,9 +35,9 @@ print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.210")]);
 
 my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                         {
-                                          SSL_ca_file   => '/etc/ssl/certs/ca.crt',
-                                          SSL_cert_file => '/etc/ssl/certs/localhost.crt',
-                                          SSL_key_file  => '/etc/ssl/private/localhost.ckey',
+                                          SSL_ca_file   => "/etc/ssl/certs/mqtt-ca.crt",
+                                          SSL_cert_file => "/etc/ssl/certs/localhost.crt",
+                                          SSL_key_file  => "/etc/ssl/private/localhost.ckey",
                                          }
                                       );
 sub callbacks {
