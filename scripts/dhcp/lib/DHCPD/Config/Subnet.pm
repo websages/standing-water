@@ -1,5 +1,7 @@
 use DHCPD::Config::Subnet::Host;
 package DHCPD::Config::Subnet;
+use Net::CIDR;
+use NetAddr::IP;
 
   sub new{
     my $class = shift;
@@ -88,6 +90,16 @@ package DHCPD::Config::Subnet;
     return $self;
   }
 
+  sub range{
+    my $self=shift;
+    return $self->{'config'}->{'range'};
+  }
+
+  sub routers{
+    my $self=shift;
+    return $self->{'config'}->{'option'}->{'routers'};
+  }
+
   sub hosts{
     my $self=shift;
     return $self->{'hosts'};
@@ -129,4 +141,58 @@ package DHCPD::Config::Subnet;
     $textconfig .= "}\n\n";
   }
 
+  sub ip_addresses{
+    my $self = shift;
+    my $n = NetAddr::IP->new( Net::CIDR::cidr2range(Net::CIDR::addrandmask2cidr($self->subnet, $self->netmask)));
+    my @addresses;
+    for my $ip( @{$n->hostenumref} ) {
+        push(@addresses,$ip->addr);
+    }
+    return @addresses;
+  }
+
+  sub dynamic_ip_addresses{
+    my $self = shift;
+    my ($start_dyn, $end_dyn) = split(/\s+/,$self->range);
+    $start = unpack N => pack CCCC => split /\./ => $start_dyn;
+    $end = unpack N => pack CCCC => split /\./ => $end_dyn;
+    my @addresses;
+    for(my $i=$start;$i <= $end; $i++){
+        push(@addresses, join '.', unpack 'C4', pack 'N', $i);
+    }
+    return @addresses;
+  }
+
+  sub static_ip_addresses{
+    my $self = shift;
+    my @addresses;
+    if(defined($self->hosts)){
+      foreach my $host (@{$self->hosts}){
+        push(@addresses, $host->ip);
+      }
+    }
+    return @addresses;
+  }
+
+  sub available_ip_addresses{
+    my $self = shift;
+    @all_addresses = $self->ip_addresses;
+
+    @used_addresses = $self->dynamic_ip_addresses;
+    foreach my $static ($self->static_ip_addresses){ push(@used_addresses,$static); }
+    push(@used_addresses,$self->routers);
+
+    my %used = map {$_ => '1'} @used_addresses;
+    my @diff;
+    while (my $addr = shift(@all_addresses)){
+      push(@diff,$addr) unless(exists $used{$addr});
+    }
+    return @diff;
+  }
+
+  sub next_available_ip{
+    my $self = shift;
+    my @available = $self->available_ip_addresses;
+    return shift(@available);
+  }
 1;

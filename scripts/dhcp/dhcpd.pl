@@ -34,7 +34,7 @@ sub refresh {
     my ($fh, $filename) = tempfile();
     system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename > /dev/null 2>&1");
     my $leases = DHCPD::Leases->new($filename);
-    
+
     # Get our dhcpd.config
     system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename > /dev/null 2>&1");
     $self->{'config'} = DHCPD::Config->new($filename);
@@ -67,7 +67,7 @@ my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                          }
                                       );
 sub callbacks {
-  my $worker=DHCPWorker->new(); 
+  my $worker=DHCPWorker->new();
   $mqtt->run(
               "dhcp" => sub {
                            my ($topic, $message) = @_;

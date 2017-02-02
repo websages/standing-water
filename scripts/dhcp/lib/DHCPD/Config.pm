@@ -88,4 +88,66 @@ package DHCPD::Config;
     return $text."\n";
   }
 
+  sub config{
+    my $self=shift;
+    return $self->{'config'};
+  }
+
+  sub subnets{
+    my $self=shift;
+    return $self->{'subnets'};
+  }
+
+  sub gethostbyip{
+    my $self=shift;
+    my $ip=shift;
+    foreach my $subnet (@{ $self->subnets }){
+        if(defined($subnet->hosts)){
+            foreach my $host (@{ $subnet->hosts }){
+                return $host if($host->ip eq $ip);
+            }
+        }
+    }
+    return undef;
+  }
+
+  sub gethostbymac{
+    my $self=shift;
+    my $mac=shift;
+    foreach my $subnet (@{ $self->subnets }){
+        if(defined($subnet->hosts)){
+            foreach my $host (@{ $subnet->hosts }){
+                return $host if($host->macaddr eq "ethernet $mac");
+            }
+        }
+    }
+    return undef;
+  }
+
+  sub gethostbyname{
+    my $self=shift;
+    my $name=shift;
+    foreach my $subnet (@{ $self->subnets }){
+        if(defined($subnet->hosts)){
+            foreach my $host (@{ $subnet->hosts }){
+                return $host if($host->host eq $name);
+            }
+        }
+    }
+    return undef;
+  }
+
+  sub getallips{
+    my $self=shift;
+    my @ipaddrs;
+    foreach my $subnet (@{ $self->subnets }){
+        if(defined($subnet->hosts)){
+            foreach my $host (@{ $subnet->hosts }){
+                push(@ipaddrs,$host->ip);
+            }
+        }
+    }
+    return @ipaddrs;
+  }
+
 1;

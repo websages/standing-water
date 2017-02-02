@@ -68,6 +68,11 @@ package DHCPD::Config::Subnet::Host;
     return $self->{'config'};
   }
 
+  sub macaddr{
+    my $self = shift;
+    return $self->hardware;
+  }
+
   sub ethernet{
     my $self = shift;
     return $self->hardware;
