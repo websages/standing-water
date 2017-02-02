@@ -195,4 +195,23 @@ use NetAddr::IP;
     my @available = $self->available_ip_addresses;
     return shift(@available);
   }
+
+  sub add_host{
+    my $self = shift;
+    my $hostname = shift;
+    return undef unless(defined($hostname));
+    my $macaddr = shift;
+    return undef unless(defined($macaddr));
+    my $ipaddress = shift||$self->next_available_ip;
+    push(@{ $self->{'hosts'} }, DHCPD::Config::Subnet::Host->new("host $hostname { hardware ethernet $macaddr; fixed-address $ipaddress; option host-name \"i$hostname\"; } # $hostname"));
+  }
+
+  sub del_host{
+    my $self = shift;
+    my $hostname = shift;
+    return undef unless(defined($hostname));
+    $new = [];
+    while( my $host=shift(@{ $self->{'hosts'}  })){ push(@{ $new },$host) unless($host->name eq $hostname); }
+    $self->{'hosts'}=$new;
+  }
 1;
