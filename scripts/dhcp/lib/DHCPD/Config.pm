@@ -161,12 +161,12 @@ package DHCPD::Config;
 
   sub getsubnetbyhost{
     my $self = shift;
-    my $host = shift;
+    my $search = shift;
     foreach my $subnet (@{ $self->subnets }){
       if(defined($subnet->hosts)){
         foreach my $host (@{ $subnet->hosts }){
-print Data::Dumper->Dump(["$host->hostname eq $host"]);
-          return $subnet if($host->hostname eq $host);
+print Data::Dumper->Dump([$host->hostname." eq ".$search]);
+          return $subnet if($host->hostname eq $search);
         }
       }
     }
