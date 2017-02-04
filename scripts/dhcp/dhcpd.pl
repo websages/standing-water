@@ -108,7 +108,6 @@ sub callbacks {
                                             print "Requirement Missing: ".join(/, /,qw(hostname));
                                           }
                                         }
-                                        print Data::Dumper->Dump([$worker->config->getsubnetbyhost($data->{'hostname'})]);
                                         if(defined($worker->config->getsubnetbyhost($data->{'hostname'}))){
                                             my $result=$worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
                                         }
