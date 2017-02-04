@@ -212,7 +212,8 @@ use NetAddr::IP;
     return undef unless(defined($hostname));
     my $new = [];
     my $removed = false;
-    while( my $host=shift(@{ $self->{'hosts'}  })){
+    print Data::Dumper->Dump($self->{'hosts'});
+    while( my $host = shift(@{ $self->{'hosts'}  })){
       print "$host->name eq $hostname\n";
       if($host->name eq $hostname){
           $removed = true;
