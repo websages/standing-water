@@ -103,7 +103,7 @@ sub callbacks {
               "dhcpd/delete"   => sub {
                                         my ($topic, $message) = @_;
                                         my $data = $worker->{'json'}->decode($message);
-                                        foreach my $requirement qw(hostname){
+                                        foreach my $requirement ('hostname'){
                                           unless(defined($data->{$requirement})){
                                             print "Requirement Missing: ".join(/, /,qw(hostname));
                                           }
