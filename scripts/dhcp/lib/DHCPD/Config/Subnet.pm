@@ -214,14 +214,14 @@ use NetAddr::IP;
     my $removed = false;
     print Data::Dumper->Dump($self->{'hosts'});
     while( my $host = shift(@{ $self->{'hosts'}  })){
-      print "$host->name eq $hostname\n";
+      print $host->name." eq ".$hostname."\n";
       if($host->name eq $hostname){
           $removed = true;
       }else{
         push(@{ $new },$host)
       }
-      $self->{'hosts'}=$new;
     }
+    $self->{'hosts'}=$new;
     return $removed;
   }
 1;
