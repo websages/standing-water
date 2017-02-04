@@ -210,8 +210,16 @@ use NetAddr::IP;
     my $self = shift;
     my $hostname = shift;
     return undef unless(defined($hostname));
-    $new = [];
-    while( my $host=shift(@{ $self->{'hosts'}  })){ push(@{ $new },$host) unless($host->name eq $hostname); }
-    $self->{'hosts'}=$new;
+    my $new = [];
+    my $removed = false;
+    while( my $host=shift(@{ $self->{'hosts'}  })){ 
+      if($host->name eq $hostname){
+          $removed = true;
+      }else{
+        push(@{ $new },$host)
+      }
+      $self->{'hosts'}=$new;
+    }
+    return $removed;
   }
 1;

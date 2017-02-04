@@ -88,7 +88,7 @@ sub callbacks {
                                         $worker->commit;
                                         $worker->refresh;
                                         $data->{'action'} = 'create';
-                                        $data->{'result'} = 'sucess';
+                                        $data->{'result'} = 'success';
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/read"     => sub {
@@ -97,7 +97,7 @@ sub callbacks {
                                         print "refreshing\n";
                                         $worker->refresh;
                                         $data->{'action'} = 'read';
-                                        $data->{'result'} = 'sucess';
+                                        $data->{'result'} = 'success';
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/delete"   => sub {
@@ -109,12 +109,16 @@ sub callbacks {
                                           }
                                         }
                                         if(defined($worker->config->getsubnetbyhost($data->{'hostname'}))){
-                                            $worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
+                                            my $result=$worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
                                         }
-                                        $worker->commit;
-                                        $worker->refresh;
                                         $data->{'action'} = 'delete';
-                                        $data->{'result'} = 'sucess';
+                                        if($result){
+                                          $worker->commit;
+                                          $worker->refresh;
+                                          $data->{'result'} = 'success';
+                                        }else{
+                                          $data->{'result'} = 'FAILED';
+                                        }
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
                       "#"      => sub {
