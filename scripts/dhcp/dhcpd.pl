@@ -89,7 +89,7 @@ sub callbacks {
                                         $worker->refresh;
                                         $data->{'action'} = 'create';
                                         $data->{'result'} = 'sucess';
-                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/read"     => sub {
                                         my ($topic, $message) = @_;
@@ -98,7 +98,7 @@ sub callbacks {
                                         $worker->refresh;
                                         $data->{'action'} = 'read';
                                         $data->{'result'} = 'sucess';
-                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/delete"   => sub {
                                         my ($topic, $message) = @_;
@@ -115,7 +115,7 @@ sub callbacks {
                                         $worker->refresh;
                                         $data->{'action'} = 'delete';
                                         $data->{'result'} = 'sucess';
-                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
                       "#"      => sub {
                                         my ($topic, $message) = @_;
