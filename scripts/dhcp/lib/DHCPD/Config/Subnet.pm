@@ -211,12 +211,11 @@ use NetAddr::IP;
     my $hostname = shift;
     return undef unless(defined($hostname));
     my $new = [];
-    my $removed = false;
-    print Data::Dumper->Dump($self->{'hosts'});
+    my $removed = 0;
     while( my $host = shift(@{ $self->{'hosts'}  })){
       print $host->name." eq ".$hostname."\n";
       if($host->name eq $hostname){
-          $removed = true;
+          $removed = 1;
       }else{
         push(@{ $new },$host)
       }
