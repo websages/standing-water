@@ -68,6 +68,11 @@ package DHCPD::Config::Subnet::Host;
     return $self->{'host'};
   }
 
+  sub hostname{
+    my $self = shift;
+    return $self->{'host'};
+  }
+
   sub config{
     my $self = shift;
     return $self->{'config'};
