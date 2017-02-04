@@ -108,8 +108,8 @@ sub callbacks {
                                             print "Requirement Missing: ".join(/, /,qw(hostname));
                                           }
                                         }
-                                        if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
-                                            $worker->config->getsubnetbycidr("10.255.13.0/24")->del_host('fermi');
+                                        if(defined($worker->config->getsubnetbyhost($data->{'hostname'}))){
+                                            $worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
                                         }
                                         $worker->commit;
                                         $worker->refresh;

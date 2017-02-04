@@ -159,4 +159,15 @@ package DHCPD::Config;
     return undef;
   }
 
+  sub getsubnetbyhost{
+    my $self = shift;
+    my $host = shift;
+    foreach my $subnet (@{ $self->subnets }){
+        foreach my $host (@{ $subnet->hosts }){
+          return $subnet if($host->hostname eq $host);
+        }
+    }
+    return undef;
+  }
+
 1;
