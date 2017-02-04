@@ -165,7 +165,7 @@ package DHCPD::Config;
     foreach my $subnet (@{ $self->subnets }){
       if(defined($subnet->hosts)){
         foreach my $host (@{ $subnet->hosts }){
-print Data::Dumper->Dump(["$host->hostname eq $host]);
+print Data::Dumper->Dump(["$host->hostname eq $host"]);
           return $subnet if($host->hostname eq $host);
         }
       }
