@@ -74,44 +74,54 @@ sub callbacks {
   # hubot/respond/room/bikeshed
 
   $mqtt->run(
-              "irc/room/soggies/nick/*/said" => sub {
-                           my ($topic, $message) = @_;
-                           print ":: $topic :: $message\n";
-                           my $decoded = $worker->{'json'}->decode($message);
-                           if($decoded->{'action'} eq 'query'){
-                             print "refreshing\n";
-                             $worker->refresh;
-                           }elsif($decoded->{'action'} eq 'commit'){
-                             $worker->commit;
-                           }elsif($decoded->{'action'} eq 'add'){
-                             foreach my $requirement qw(cidr,hostname,macaddr){
-                               unless(defined($decoded->{$requirement})){
-                                 print "Requirement Missing: ".join(/, /,qw(cidr,hostname,macaddr));
-                               }
-                             }
-                             if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
-                                 $worker->config->getsubnetbycidr("10.255.13.0/24")->add_host('fermi','00:50:56:a4:e5:01');
-                             }
-                             $worker->refresh;
-                           }elsif($decoded->{'action'} eq 'remove'){
-                             foreach my $requirement qw(hostname){
-                               unless(defined($decoded->{$requirement})){
-                                 print "Requirement Missing: ".join(/, /,qw(hostname));
-                               }
-                             if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
-                                 $worker->config->getsubnetbycidr("10.255.13.0/24")->del_host('fermi');
-                             }
-                             $worker->refresh;
-                           }else{
-                             print "Unhandled action: $decoded->{'action'}\n";
-                           }
-                           # exit 0;
-                         },
-              "#" => sub {
-                           my ($topic, $message) = @_;
-                           print "[$topic] $message\n";
-                           # exit 0;
-                         },
+              "dhcpd/create"   => sub {
+                                        my ($topic, $message) = @_;
+                                        my $data = $worker->{'json'}->decode($message);
+                                        foreach my $requirement ('cidr','hostname','macaddr'){
+                                          unless(defined($data->{$requirement})){
+                                            print "Requirement Missing: ".join(/, /,qw(cidr,hostname,macaddr));
+                                          }
+                                        }
+                                        if(defined($worker->config->getsubnetbycidr($data->{'cidr'}))){
+                                            $worker->config->getsubnetbycidr($data->{'cidr'})->add_host($data->{'hostname'},$data->{'macaddr'});
+                                        }
+                                        $worker->commit;
+                                        $worker->refresh;
+                                        $data->{'action'} = 'create';
+                                        $data->{'result'} = 'sucess';
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                      },
+              "dhcpd/read"     => sub {
+                                        my ($topic, $message) = @_;
+                                        my $data = $worker->{'json'}->decode($message);
+                                        print "refreshing\n";
+                                        $worker->refresh;
+                                        $data->{'action'} = 'read';
+                                        $data->{'result'} = 'sucess';
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                      },
+              "dhcpd/delete"   => sub {
+                                        my ($topic, $message) = @_;
+                                        my $data = $worker->{'json'}->decode($message);
+                                        foreach my $requirement qw(hostname){
+                                          unless(defined($data->{$requirement})){
+                                            print "Requirement Missing: ".join(/, /,qw(hostname));
+                                          }
+                                        }
+                                        if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
+                                            $worker->config->getsubnetbycidr("10.255.13.0/24")->del_host('fermi');
+                                        }
+                                        $worker->commit;
+                                        $worker->refresh;
+                                        $data->{'action'} = 'delete';
+                                        $data->{'result'} = 'sucess';
+                                        $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data);
+                                      },
+                      "#"      => sub {
+                                        my ($topic, $message) = @_;
+                                        print "[$topic] $message\n";
+                                        # exit 0;
+                                      },
             );
 }
 callbacks
