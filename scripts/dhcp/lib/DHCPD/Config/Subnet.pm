@@ -203,7 +203,7 @@ use NetAddr::IP;
     my $macaddr = shift;
     return undef unless(defined($macaddr));
     my $ipaddress = shift||$self->next_available_ip;
-    push(@{ $self->{'hosts'} }, DHCPD::Config::Subnet::Host->new("host $hostname { hardware ethernet $macaddr; fixed-address $ipaddress; option host-name \"i$hostname\"; } # $hostname"));
+    push(@{ $self->{'hosts'} }, DHCPD::Config::Subnet::Host->new("host $hostname { hardware ethernet $macaddr; fixed-address $ipaddress; option host-name \"$hostname\"; } # $hostname"));
   }
 
   sub del_host{

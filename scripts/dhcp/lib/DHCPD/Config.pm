@@ -150,4 +150,13 @@ package DHCPD::Config;
     return @ipaddrs;
   }
 
+  sub getsubnetbycidr{
+    my $self = shift;
+    my $cidr = shift;
+    foreach my $subnet (@{ $self->subnets }){
+        return $subnet if (Net::CIDR::addrandmask2cidr($subnet->subnet, $subnet->netmask) eq $cidr);
+    }
+    return undef;
+  }
+
 1;

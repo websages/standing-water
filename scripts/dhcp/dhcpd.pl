@@ -28,6 +28,11 @@ package DHCPWorker;
    return $self;
  }
 
+sub config{
+  my $self = shift;
+  return $self->{'config'};
+}
+
 sub refresh {
     my $self = shift;
     # Scrape our leases
@@ -40,10 +45,6 @@ sub refresh {
     $self->{'config'} = DHCPD::Config->new($filename);
     return $self->{'config'};
 
-    #print Data::Dumper->Dump([$leases->getleasesbymac("68:5b:35:a3:6f:51")]);
-    #print Data::Dumper->Dump([$leases->getleasesbymac("60:03:08:90:93:e8")]);
-    #print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.108")]);
-    #print Data::Dumper->Dump([$leases->getleasesbyip("10.255.0.210")]);
 }
 
 sub commit{
@@ -68,8 +69,12 @@ my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                       );
 sub callbacks {
   my $worker=DHCPWorker->new();
+
+  # irc/room/soggies/nick/jameswhite/said
+  # hubot/respond/room/bikeshed
+
   $mqtt->run(
-              "dhcp" => sub {
+              "irc/room/soggies/nick/*/said" => sub {
                            my ($topic, $message) = @_;
                            print ":: $topic :: $message\n";
                            my $decoded = $worker->{'json'}->decode($message);
@@ -78,6 +83,27 @@ sub callbacks {
                              $worker->refresh;
                            }elsif($decoded->{'action'} eq 'commit'){
                              $worker->commit;
+                           }elsif($decoded->{'action'} eq 'add'){
+                             foreach my $requirement qw(cidr,hostname,macaddr){
+                               unless(defined($decoded->{$requirement})){
+                                 print "Requirement Missing: ".join(/, /,qw(cidr,hostname,macaddr));
+                               }
+                             }
+                             if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
+                                 $worker->config->getsubnetbycidr("10.255.13.0/24")->add_host('fermi','00:50:56:a4:e5:01');
+                             }
+                             $worker->refresh;
+                           }elsif($decoded->{'action'} eq 'remove'){
+                             foreach my $requirement qw(hostname){
+                               unless(defined($decoded->{$requirement})){
+                                 print "Requirement Missing: ".join(/, /,qw(hostname));
+                               }
+                             if(defined($worker->config->getsubnetbycidr("10.255.13.0/24"))){
+                                 $worker->config->getsubnetbycidr("10.255.13.0/24")->del_host('fermi');
+                             }
+                             $worker->refresh;
+                           }else{
+                             print "Unhandled action: $decoded->{'action'}\n";
                            }
                            # exit 0;
                          },

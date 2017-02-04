@@ -28,6 +28,16 @@ my $config = DHCPD::Config->new($filename);
 #print Data::Dumper->Dump([$config->gethostbymac('00:0c:29:82:79:0b')]);
 #print Data::Dumper->Dump([$config->gethostbyname('newton')]);
 #print Data::Dumper->Dump([$config->getallips]);
-foreach my $subnet (@{$config->subnets}){
-    print Data::Dumper->Dump([$subnet->next_available_ip]);
+
+#foreach my $subnet (@{$config->subnets}){
+#    print Data::Dumper->Dump([$subnet->next_available_ip]);
+#}
+
+if(defined($config->getsubnetbycidr("10.255.13.0/24"))){
+    $config->getsubnetbycidr("10.255.13.0/24")->add_host('fermi','00:50:56:a4:e5:01');
 }
+print $config->text."\n";
+if(defined($config->getsubnetbycidr("10.255.13.0/24"))){
+    $config->getsubnetbycidr("10.255.13.0/24")->del_host('fermi');
+}
+print $config->text."\n";
