@@ -163,9 +163,11 @@ package DHCPD::Config;
     my $self = shift;
     my $host = shift;
     foreach my $subnet (@{ $self->subnets }){
+      if(defined($subnet->hosts)){
         foreach my $host (@{ $subnet->hosts }){
           return $subnet if($host->hostname eq $host);
         }
+      }
     }
     return undef;
   }
