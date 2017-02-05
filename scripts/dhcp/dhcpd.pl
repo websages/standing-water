@@ -112,7 +112,7 @@ sub callbacks {
                                             my $result=$worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
                                         }
                                         $data->{'action'} = 'delete';
-                                        if($result){
+                                        if($result == 1){
                                           $worker->commit;
                                           $worker->refresh;
                                           $data->{'result'} = 'success';
