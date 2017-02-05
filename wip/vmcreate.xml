@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Virtual-Machines>
+  <Virtual-Machine>
+    <Name>fermi.jameswhite.org</Name>
+    <Host>10.255.12.204</Host>
+    <Datacenter>the bikeshed</Datacenter>
+    <Guest-Id>otherGuest64</Guest-Id>
+    <Datastore>LUN16</Datastore>
+    <Disksize>16777216</Disksize>
+    <Memory>2048</Memory>
+    <Number-of-Processor>1</Number-of-Processor>
+    <Nic-Network>VLAN_13_jameswhite</Nic-Network>
+    <Nic-Poweron>0</Nic-Poweron>
+    <ResourcePool>jameswhite</ResourcePool>
+    <VMFolder>jameswhite</VMFolder>
+  </Virtual-Machine>
+</Virtual-Machines>

@@ -1,0 +1,59 @@
+#!/bin/bash
+while [ ! -z "$*" ]; do 
+  case $1 in
+    --local|-local|local|--localboot|-localboot|localboot)
+      ACTION="localboot"
+      shift 1;
+    ;;
+    --install|-install|install)
+      ACTION="install"
+      shift 1;
+    ;;
+    *)
+      TARGET=$1;
+      shift 1;
+    ;;
+  esac
+done
+TARGET_ACTUAL=$(cd /opt/tftpboot/pxelinux.cfg; ls | grep "${TARGET}")
+if [ "$(echo ${TARGET_ACTUAL} | wc -w)" -gt 1 ]; then 
+  echo "Ambiguous target: ${TARGET_ACTUAL}" | tr '\n' ' '
+  exit 1;
+fi
+
+BASENAME=$(echo "${TARGET_ACTUAL}" | sed -e 's/\..*//')
+ACTION_CURRENT=$(cd /opt/tftpboot/pxelinux.cfg; flink "${TARGET_ACTUAL}" | awk -F '->' '{print $NF}' | sed -e 's/ *//')
+
+if [ -z "${ACTION}" ] ;then
+  echo "no action to take"
+  exit 1;
+fi
+
+case "${ACTION_CURRENT}" in
+   "install_$BASENAME")
+     if [ "${ACTION}" == "install" ]; then
+       echo "${TARGET_ACTUAL} already set to install"
+       exit 0;
+     else
+       echo "Setting ${TARGET_ACTUAL} to localboot"
+       IP_HASH=$(cd /opt/tftpboot/pxelinux.cfg; flink "${TARGET_ACTUAL}" | awk -F '->' '{print $(NF-1)}' | sed -e 's/ *//')
+       (cd /opt/tftpboot/pxelinux.cfg; rm $IP_HASH && ln -s ../pxelinux.menus/localboot $IP_HASH)
+       exit 0;
+     fi	
+   ;;
+   localboot)
+     if [ ${ACTION} == "localboot" ]; then
+       echo "${TARGET_ACTUAL} already set to localboot"
+       exit 0;
+     else
+       echo "Setting ${TARGET_ACTUAL} to install"
+       IP_HASH=$(cd /opt/tftpboot/pxelinux.cfg; flink "${TARGET_ACTUAL}" | awk -F '->' '{print $(NF-1)}' | sed -e 's/ *//')
+       (cd /opt/tftpboot/pxelinux.cfg; rm $IP_HASH && ln -s ../pxelinux.menus/install_$BASENAME $IP_HASH)
+       exit 0;
+     fi	
+   ;;
+   *)
+     echo "${TARGET_ACTUAL} in unknown state: ${ACTION_CURRENT}"
+     exit 1;
+   ;;
+esac
