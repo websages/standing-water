@@ -69,6 +69,7 @@ sub callbacks {
                                           $data->{'ipaddress'} = $host->ipaddress;
                                           $data->{'macaddr'} = $host->macaddr;
                                           $data->{'macaddr'}=~s/\s*ethernet\s*//;
+                                          $subnet = $worker->config->getsubnetbyhost($data->{'hostname'});
                                         }else{
                                           $data->{'result'} = 'failure';
                                           $data->{'reason'} = 'entry not found';
