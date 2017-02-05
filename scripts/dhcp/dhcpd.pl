@@ -59,13 +59,10 @@ sub callbacks {
                                         $data->{'result'} = 'success';
                                         if(defined($data->{'hostname'})){
                                           $host = $worker->config->gethostbyname($data->{'hostname'});
-                                          print Data::Dumper->Dump([$host]);
                                         }elsif(defined($data->{'macaddr'})){
                                           $host = $worker->config->gethostbymac($data->{'macaddr'});
-                                          print Data::Dumper->Dump([$host]);
                                         }elsif(defined($data->{'ipaddress'})){
                                           $host = $worker->config->gethostbyip($data->{'ipaddress'});
-                                          print Data::Dumper->Dump([$host]);
                                         }
                                         $data->{'hostname'} = $host->hostname;
                                         $data->{'ipaddress'} = $host->ipaddress;
