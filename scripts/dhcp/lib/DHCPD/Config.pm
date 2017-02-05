@@ -87,6 +87,7 @@ package DHCPD::Config;
       if($option=~m/option\s+domain-name\s+(.*)/){
         my $domain=$1;
         $domain=~s/"//g;
+        $domain=~s/;//g;
         return $domain;
       }
     }
