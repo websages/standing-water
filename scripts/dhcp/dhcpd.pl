@@ -76,6 +76,7 @@ sub callbacks {
   $mqtt->run(
               "dhcpd/create"   => sub {
                                         my ($topic, $message) = @_;
+                                        print "[$topic] $message\n";
                                         my $data = $worker->{'json'}->decode($message);
                                         foreach my $requirement ('cidr','hostname','macaddr'){
                                           unless(defined($data->{$requirement})){
@@ -93,6 +94,7 @@ sub callbacks {
                                       },
               "dhcpd/read"     => sub {
                                         my ($topic, $message) = @_;
+                                        print "[$topic] $message\n";
                                         my $data = $worker->{'json'}->decode($message);
                                         print "refreshing\n";
                                         $worker->refresh;
@@ -102,6 +104,7 @@ sub callbacks {
                                       },
               "dhcpd/delete"   => sub {
                                         my ($topic, $message) = @_;
+                                        print "[$topic] $message\n";
                                         my $data = $worker->{'json'}->decode($message);
                                         foreach my $requirement ('hostname'){
                                           unless(defined($data->{$requirement})){
