@@ -67,6 +67,9 @@ sub callbacks {
                                           $host = $worker->config->gethostbyip($data->{'ipaddress'});
                                           print Data::Dumper->Dump([$host]);
                                         }
+                                        $data->{'hostname'} = $host->hostname;
+                                        $data->{'ipaddress'} = $host->ipaddress;
+                                        $data->{'macaddr'} = $host->macaddr;
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/delete"   => sub {
