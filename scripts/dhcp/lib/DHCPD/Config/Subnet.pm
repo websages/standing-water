@@ -212,7 +212,7 @@ use NetAddr::IP;
     return undef unless(defined($hostname));
     my $new = [];
     my $removed = 0;
-    print "1:".length(@{$self->{'hosts'}})."\n";
+    print "1:".length($#{$self->{'hosts'}})."\n";
     while( my $host = shift(@{ $self->{'hosts'}  })){
       print "[".$host->name."] eq [".$hostname."]\n";
       if($host->name eq $hostname){
@@ -224,7 +224,7 @@ use NetAddr::IP;
       }
     }
     $self->{'hosts'}=$new;
-    print "2:".length(@{$self->{'hosts'}})."\n";
+    print "2:".length($#{$self->{'hosts'}})."\n";
     return $removed;
   }
 1;
