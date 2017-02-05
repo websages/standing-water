@@ -85,7 +85,9 @@ package DHCPD::Config;
     my $self=shift;
     foreach my $option (@{ $self->{'global-options'} }){
       if($option=~m/option\s+domain-name\s+(.*)/){
-        return $1;
+        my $domain=$1;
+        $domain=~s/"//g;
+        return $domain;
       }
     }
     return undef;
