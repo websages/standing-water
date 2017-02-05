@@ -212,8 +212,6 @@ use NetAddr::IP;
     return undef unless(defined($hostname));
     my $new = [];
     my $removed = 0;
-    print Data::Dumper->Dump([$self->hosts]);
-    map {print Data::Dumper->Dump([ $_ ])."\n"} $self->hosts;
     while( my $host = shift(@{ $self->{'hosts'}  })){
       print "[".$host->name."] eq [".$hostname."]\n";
       if($host->name eq $hostname){
@@ -225,7 +223,7 @@ use NetAddr::IP;
       }
     }
     $self->{'hosts'}=$new;
-    map {print Data::Dumper->Dump([ $_ ])."\n"} $self->hosts;
+    print "removed: $removed\n";
     return $removed;
   }
 1;
