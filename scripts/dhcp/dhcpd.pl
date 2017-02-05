@@ -68,6 +68,7 @@ sub callbacks {
                                           $data->{'hostname'} = $host->hostname;
                                           $data->{'ipaddress'} = $host->ipaddress;
                                           $data->{'macaddr'} = $host->macaddr;
+                                          $data->{'macaddr'}=~s/\s*ethernet\s*/;
                                         }else{
                                           $data->{'result'} = 'failure';
                                           $data->{'reason'} = 'entry not found';
