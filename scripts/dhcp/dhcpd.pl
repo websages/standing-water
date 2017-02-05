@@ -61,7 +61,7 @@ sub callbacks {
                                           $host = $worker->config->gethostbyname($data->{'hostname'});
                                           print Data::Dumper->Dump([$host]);
                                         }elsif(defined($data->{'macaddr'})){
-                                          $host = $worker->config->gethostbymacaddr($data->{'macaddr'});
+                                          $host = $worker->config->gethostbymac($data->{'macaddr'});
                                           print Data::Dumper->Dump([$host]);
                                         }elsif(defined($data->{'ipaddress'})){
                                           $host = $worker->config->gethostbyip($data->{'ipaddress'});
