@@ -58,7 +58,13 @@ sub callbacks {
                                         $data->{'action'} = 'info';
                                         $data->{'result'} = 'success';
                                         if(defined($data->{'hostname'})){
-                                          $host = $worker->gethostbyname($data->{'hostname'});
+                                          $host = $worker->config->gethostbyname($data->{'hostname'});
+                                          print Data::Dumper->Dump($host);
+                                        }elsif(defined($data->{'macaddr'})){
+                                          $host = $worker->config->gethostbymacaddr($data->{'macaddr'});
+                                          print Data::Dumper->Dump($host);
+                                        }elsif(defined($data->{'ipaddress'})){
+                                          $host = $worker->config->gethostbyip($data->{'ipaddress'});
                                           print Data::Dumper->Dump($host);
                                         }
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
