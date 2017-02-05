@@ -11,55 +11,7 @@ BEGIN {
 }
 ################################################################################
 # http://standards-oui.ieee.org/oui/oui.txt
-
-use Data::Dumper;
-use JSON;
 use Net::MQTT::Simple::SSL;
-
-package DHCPWorker;
- use DHCPD;
- use File::Temp qw/ tempfile tempdir /;
- sub new {
-   my $class = shift;
-   my $self = {};
-   bless $self, $class;
-   $self->{'json'} = JSON->new->allow_nonref;
-   $self->{'config'} = $self->refresh;
-   return $self;
- }
-
-sub config{
-  my $self = shift;
-  return $self->{'config'};
-}
-
-sub refresh {
-    my $self = shift;
-    # Scrape our leases
-    my ($fh, $filename) = tempfile();
-    system("/usr/bin/scp opt\@10.255.0.1:/var/db/dhcpd.leases $filename > /dev/null 2>&1");
-    my $leases = DHCPD::Leases->new($filename);
-
-    # Get our dhcpd.config
-    system("/usr/bin/scp opt\@10.255.0.1:/etc/dhcpd.conf $filename > /dev/null 2>&1");
-    $self->{'config'} = DHCPD::Config->new($filename);
-    return $self->{'config'};
-
-}
-
-sub commit{
-    my $self = shift;
-    $pid = open(DHCPDCONF, "| /usr/bin/ssh opt\@10.255.0.1 'cat - | sudo tee /etc/dhcpd.conf'>/dev/null") or die "Couldn't fork: $!\n";
-    print DHCPDCONF $self->{'config'}->text;
-    close(DHCPDCONF) or warn "Couldn't close: $!\n";
-    open (CHECKBOUNCE, "/usr/bin/ssh opt\@10.255.0.1 '/usr/bin/sudo /etc/rc.d/dhcpd restart'|");
-    my $output=<CHECKBOUNCE>;
-    close(CHECKBOUNCE);
-    print $output;
-}
-
-1;
-
 my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                         {
                                           SSL_ca_file   => "/etc/ssl/certs/mqtt-ca.crt",
@@ -68,10 +20,7 @@ my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                          }
                                       );
 sub callbacks {
-  my $worker=DHCPWorker->new();
-
-  # irc/room/soggies/nick/jameswhite/said
-  # hubot/respond/room/bikeshed
+  my $worker=DHCPD::Worker->new();
 
   $mqtt->run(
               "dhcpd/create"   => sub {
@@ -92,13 +41,20 @@ sub callbacks {
                                         $data->{'result'} = 'success';
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
-              "dhcpd/read"     => sub {
+              "dhcpd/info"     => sub {
                                         my ($topic, $message) = @_;
                                         print "[$topic] $message\n";
+                                        $data->{'action'} = 'info';
                                         my $data = $worker->{'json'}->decode($message);
+                                        if(!defined($data->{'hostname'}) || !defined($data->{'macaddr'}) || !defined($data->{'ipaddress'}) ){
+                                           $data->{'result'} = 'failure';
+                                           $data->{'reason'} = 'Neither hostname, macaddr, nor ipaddress specified.';
+                                           $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
+                                           return;
+                                        }
                                         print "refreshing\n";
                                         $worker->refresh;
-                                        $data->{'action'} = 'read';
+                                        $data->{'action'} = 'info';
                                         $data->{'result'} = 'success';
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
