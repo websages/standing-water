@@ -225,7 +225,7 @@ use NetAddr::IP;
       }
     }
     $self->{'hosts'}=$new;
-    map {print $_->entry_oneline."\n"} $self->hosts;
+    map {print Data::Dumper->Dump([ $_ ])."\n"} $self->hosts;
     return $removed;
   }
 1;
