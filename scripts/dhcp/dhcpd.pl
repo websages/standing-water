@@ -56,7 +56,6 @@ sub callbacks {
                                         print "refreshing\n";
                                         $worker->refresh;
                                         $data->{'action'} = 'info';
-                                        $data->{'result'} = 'success';
                                         if(defined($data->{'hostname'})){
                                           $host = $worker->config->gethostbyname($data->{'hostname'});
                                         }elsif(defined($data->{'macaddr'})){
@@ -64,9 +63,15 @@ sub callbacks {
                                         }elsif(defined($data->{'ipaddress'})){
                                           $host = $worker->config->gethostbyip($data->{'ipaddress'});
                                         }
-                                        $data->{'hostname'} = $host->hostname;
-                                        $data->{'ipaddress'} = $host->ipaddress;
-                                        $data->{'macaddr'} = $host->macaddr;
+                                        if(defined($host)){
+                                          $data->{'result'} = 'success';
+                                          $data->{'hostname'} = $host->hostname;
+                                          $data->{'ipaddress'} = $host->ipaddress;
+                                          $data->{'macaddr'} = $host->macaddr;
+                                        }else{
+                                          $data->{'result'} = 'failure';
+                                          $data->{'reason'} = 'entry not found';
+                                        }
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/delete"   => sub {
