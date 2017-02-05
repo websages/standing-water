@@ -57,6 +57,10 @@ sub callbacks {
                                         $worker->refresh;
                                         $data->{'action'} = 'info';
                                         $data->{'result'} = 'success';
+                                        if(defined($data->{'hostname'})){
+                                          $host = $worker->gethostbyname($data->{'hostname'});
+                                          print Data::Dumper->Dump($host);
+                                        }
                                         $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
                                       },
               "dhcpd/delete"   => sub {
