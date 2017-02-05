@@ -216,8 +216,10 @@ use NetAddr::IP;
     while( my $host = shift(@{ $self->{'hosts'}  })){
       print "[".$host->name."] eq [".$hostname."]\n";
       if($host->name eq $hostname){
+          print "removed\n";
           $removed = 1;
       }else{
+          print "stowed\n";
         push(@{ $new },$host)
       }
     }
