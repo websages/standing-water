@@ -213,7 +213,7 @@ use NetAddr::IP;
     my $new = [];
     my $removed = 0;
     print Data::Dumper->Dump([$self->hosts]);
-    map {print $_->entry_oneline."\n"} $self->hosts;
+    map {print Data::Dumper->Dump([ $_ ])."\n"} $self->hosts;
     while( my $host = shift(@{ $self->{'hosts'}  })){
       print "[".$host->name."] eq [".$hostname."]\n";
       if($host->name eq $hostname){
