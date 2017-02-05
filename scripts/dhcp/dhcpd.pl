@@ -108,8 +108,9 @@ sub callbacks {
                                             print "Requirement Missing: ".join(/, /,qw(hostname));
                                           }
                                         }
+                                        my $result=0;
                                         if(defined($worker->config->getsubnetbyhost($data->{'hostname'}))){
-                                            my $result=$worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
+                                            $result=$worker->config->getsubnetbyhost($data->{'hostname'})->del_host($data->{'hostname'});
                                         }
                                         $data->{'action'} = 'delete';
                                         if($result == 1){
