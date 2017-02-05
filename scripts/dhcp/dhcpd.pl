@@ -11,6 +11,7 @@ BEGIN {
 }
 ################################################################################
 # http://standards-oui.ieee.org/oui/oui.txt
+use DHCPD;
 use Net::MQTT::Simple::SSL;
 my $mqtt = Net::MQTT::Simple::SSL->new( "mqtt:8883",
                                         {
