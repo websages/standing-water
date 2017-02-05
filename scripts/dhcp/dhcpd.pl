@@ -47,7 +47,7 @@ sub callbacks {
                                         print "[$topic] $message\n";
                                         $data->{'action'} = 'info';
                                         my $data = $worker->{'json'}->decode($message);
-                                        if(!defined($data->{'hostname'}) || !defined($data->{'macaddr'}) || !defined($data->{'ipaddress'}) ){
+                                        if(!defined($data->{'hostname'}) && !defined($data->{'macaddr'}) && !defined($data->{'ipaddress'}) ){
                                            $data->{'result'} = 'failure';
                                            $data->{'reason'} = 'Neither hostname, macaddr, nor ipaddress specified.';
                                            $mqtt->publish("dhcpd/response",$worker->{'json'}->encode($data));
