@@ -1,0 +1,122 @@
+#!/bin/bash
+usage(){
+  echo "   Usage: $(basename $0) { -install | -localboot } { -fqdn <fqdn> | -h <host> } [ -tftproot <tftp_root> ] [ -template <template> ] [ -macaddr <mac_address> ] [ -ip <ip_address> ]"
+  echo
+  echo "If '-install' or '-localboot' are not given, -localboot will be assumed (as to not clobber the machine.)"
+  echo "If '-template' is not given, debian_jessie will be assumed."
+  echo "If '-host' is specified instead of '-fqdn', $(dnsdomainname) will be assumed. Specifying neither will exit 1"
+  echo "If '-ip' is not given, it will look for existing symlinks, then try DNS, failing those exit 2."
+  echo "If '-macaddr' is not given, it will look for existing symlinks, then try ARP, failing those exit 3."
+  echo
+  echo "Example: $(basename $0) -install -tftproot /opt/tftproot -template debian_jessie -macaddr 00:50:56:88:1c:b8 -fqdn pascal.thebikeshed.io -ip 10.255.12.52"
+  echo "  will result in a symlink chain of: 01-00-50-56-88-1c-b8 -> pascal.thebikeshed.io -> 10.255.12.52 -> 0AFF0C34 -> ../pxelinux.menus/install_pascal"
+}
+
+ensure_link(){
+   DIRECTORY="$1";shift 1;
+   TARGET="$1";shift 1;
+   LINK="$1";shift 1;
+   if [ -h "$DIRECTORY/pxelinux.cfg/$LINK" ]; then
+     if [ "$(cd ${DIRECTORY}/pxelinux.cfg; ls -l $LINK | awk '{print $NF}')" != "$TARGET" ]; then
+       (cd ${DIRECTORY}/pxelinux.cfg; unlink $LINK)
+       (cd ${DIRECTORY}/pxelinux.cfg; ln -s $TARGET $LINK)
+     fi
+   else
+     (cd $DIRECTORY; ln -s $TARGET $LINK)
+   fi
+
+}
+
+ACTION="localboot"
+while [ ! -z "$*" ]; do
+  case $1 in
+    --local|-local|local|--localboot|-localboot|localboot)
+      ACTION="localboot"
+      shift 1;
+    ;;
+    --install|-install|install)
+      ACTION="install"
+      shift 1;
+    ;;
+    --template|-template)
+      TEMPLATE="$2"
+      shift 2;
+    ;;
+    --mac|-mac|--macaddr|-macaddr|--ethernet|-ethernet|--hw|-hw)
+      MACADDR="$2"
+      shift 2;
+    ;;
+    --fqdn|-fqdn)
+      FQDN="$2"
+      shift 2;
+    ;;
+    --ip|-ip|--ipaddr|-ipaddr)
+      IPADDR="$2"
+      shift 2;
+    ;;
+    --host|-host|--h|-h)
+      HOST="$2"
+      shift 2;
+    ;;
+    --tftproot|-tftproot|--r|-r)
+      TFTPROOT="$2"
+      shift 2;
+    ;;
+    --help|-help)
+      usage;
+      exit 0;
+    ;;
+    *)
+      echo "unknown option: [$1], ignoring"
+      shift 1;
+    ;;
+  esac
+done
+
+[ -z "${TFTPROOT}" ] && TFTPROOT='/opt/tftpboot'
+[ -z "${TEMPLATE}" ] && TEMPLATE='debian_jessie'
+if [ -z "${FQDN}" ] ; then
+  if [ -z "${HOST}" ] ; then
+    echo "Error: -host or -fqdn required"
+    usage
+    exit 1;
+  else
+    if [ -z "$(dnsdomainname)"]; then
+      echo "Attempt to use host basename with dnsdomainname not set"
+      exit 4
+    else
+      FQDN="${HOST}.$(dnsdomainname)"
+    fi
+  fi
+else
+  HOST=$(echo $FQDN|sed -e 's/\..*//')
+fi
+if [ -z "${IPADDR}" ] ; then
+  echo "no IP address supplied"
+  # FIXME add existing link check
+else
+  HEXIP="$(printf '%02X' $(echo ${IPADDR//./ }))"
+fi
+if [ -z "${MACADDR}" ] ; then
+  echo "no MAC address supplied"
+  # FIXME add existing link check
+else
+  MAC_LINK="01-$(echo ${MACADDR//:/ }|sed -e's/ /-/g')"
+fi
+
+ACTION_TARGET="localboot"
+if [ "${ACTION}" == "install" ]; then
+  export ACTION_TARGET="../pxelinux.menus/install_${HOST}"
+  sed -e "s/~HOST~/${HOST}/g" \
+      -e "s/~IPADDR~/${IPADDR}/g" \
+      -e "s/~FQDN~/${FQDN}/g" \
+      -e "s/~MACADDR~/${MACADDR}/g" \
+      "${TFTPROOT}/pxelinux.templates/${TEMPLATE}" > "${TFTPROOT}/pxelinux.menus/${ACTION_TARGET}"
+fi
+
+ensure_link ${TFTPROOT}                                      ${FQDN}   ${MAC_LINK}
+ensure_link ${TFTPROOT}                            ${IPADDR} ${FQDN}
+ensure_link ${TFTPROOT}                  ${HEXIP}  ${IPADDR}
+ensure_link ${TFTPROOT} ${ACTION_TARGET} ${HEXIP}
+
+exit 0;

@@ -76,6 +76,24 @@ package DHCPD::Config;
     return $self->{'config'};
   }
 
+  sub globtions{
+    my $self=shift;
+    return $self->{'global-options'};
+  }
+
+  sub domainname{
+    my $self=shift;
+    foreach my $option (@{ $self->{'global-options'} }){
+      if($option=~m/option\s+domain-name\s+(.*)/){
+        my $domain=$1;
+        $domain=~s/"//g;
+        $domain=~s/;//g;
+        return $domain;
+      }
+    }
+    return undef;
+  }
+
   sub text{
     my $self=shift;
     my $text = '';
